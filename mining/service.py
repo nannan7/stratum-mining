@@ -101,7 +101,7 @@ class MiningService(GenericService):
     def subscribe(self, *args):
         '''Subscribe for receiving mining jobs. This will
         return subscription details, extranonce1_hex and extranonce2_size'''
-        
+
         extranonce1 = Interfaces.template_registry.get_new_extranonce1()
         extranonce2_size = Interfaces.template_registry.extranonce2_size
         extranonce1_hex = binascii.hexlify(extranonce1)
@@ -147,7 +147,7 @@ class MiningService(GenericService):
 
         if is_banned and submit_time - last_ts > settings.WORKER_BAN_TIME:
             if percent > settings.INVALID_SHARES_PERCENT:
-                log.debug("Worker invalid percent: %0.2f %s STILL BANNED!" % (percent, worker_name))
+                log.debug("Worker invalid percent: %0.2f %s STILL BANNED! %s" % (percent, worker_name, str(ip)))
             else: 
                 is_banned = False
                 log.debug("Clearing ban for worker: %s UNBANNED" % worker_name)
@@ -156,7 +156,7 @@ class MiningService(GenericService):
         if submit_time - last_ts > settings.WORKER_CACHE_TIME and not is_banned:
             if percent > settings.INVALID_SHARES_PERCENT and settings.ENABLE_WORKER_BANNING:
                 is_banned = True
-                log.debug("Worker invalid percent: %0.2f %s BANNED!" % (percent, worker_name))
+                log.debug("Worker invalid percent: %0.2f %s BANNED! %s" % (percent, worker_name, str(ip)))
             else:
                 log.debug("Clearing worker stats for: %s" % worker_name)
             (valid, invalid, is_banned, last_ts) = (0, 0, is_banned, Interfaces.timestamper.time())

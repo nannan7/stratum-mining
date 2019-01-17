@@ -85,7 +85,7 @@ class BitcoinRPC(object):
                 try:
                     log.debug("Submitting Block with getblocktemplate submit: attempt #"+str(attempts))
                     log.debug([block_hex,])
-                    resp = (yield self._call('getblocktemplate', [{'mode': 'submit', 'data': block_hex}]))
+                    resp = (yield self._call('getblocktemplate', [{'mode': 'submit', 'data': block_hex, "rules":["segwit"]}]))
                     break
                 except Exception as e:
                     if attempts > 4:
@@ -104,7 +104,7 @@ class BitcoinRPC(object):
                     try:
                         log.exception("submitblock Failed, does the coind have submitblock?")
                         log.exception("Trying GetBlockTemplate")
-                        resp = (yield self._call('getblocktemplate', [{'mode': 'submit', 'data': block_hex}]))
+                        resp = (yield self._call('getblocktemplate', [{'mode': 'submit', 'data': block_hex, "rules":["segwit"]}]))
                         break
                     except Exception as e:
                         if attempts > 4:
@@ -129,24 +129,29 @@ class BitcoinRPC(object):
     @defer.inlineCallbacks
     def getblocktemplate(self):
         try:
-            resp = (yield self._call('getblocktemplate', [{}]))
+            resp = (yield self._call('getblocktemplate', [{"rules":["segwit"]}]))
             defer.returnValue(json.loads(resp)['result'])
         # if internal server error try getblocktemplate without empty {} # ppcoin
         except Exception as e:
             if (str(e) == "500 Internal Server Error"):
-                resp = (yield self._call('getblocktemplate', []))
+                resp = (yield self._call('getblocktemplate', [{"rules":["segwit"]}]))
                 defer.returnValue(json.loads(resp)['result'])
             else:
                 raise
                                                   
     @defer.inlineCallbacks
     def prevhash(self):
-        resp = (yield self._call('getwork', []))
         try:
-            defer.returnValue(json.loads(resp)['result']['data'][8:72])
+            resp = (yield self._call('getbestblockhash', []))
+            defer.returnValue(json.loads(resp)['result'])
+        # if internal server error try getblocktemplate without empty {} # ppcoin
         except Exception as e:
-            log.exception("Cannot decode prevhash %s" % str(e))
-            raise
+            if (str(e) == "500 Internal Server Error"):
+                resp = (yield self._call('getwork', []))
+                defer.returnValue(util.reverse_hash(json.loads(resp)['result']['data'][8:72]))
+            else:
+                log.exception("Cannot decode prevhash %s" % str(e))
+                raise
         
     @defer.inlineCallbacks
     def validateaddress(self, address):

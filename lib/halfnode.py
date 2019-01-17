@@ -20,30 +20,6 @@ import lib.logger
 log = lib.logger.get_logger('halfnode')
 log.debug("Got to Halfnode")
 
-if settings.COINDAEMON_ALGO == 'scrypt':
-    log.debug("########################################### Loading LTC Scrypt #########################################################")
-    import ltc_scrypt
-elif settings.COINDAEMON_ALGO == 'quark':
-    log.debug("########################################### Loading Quark Support #########################################################")
-    import quark_hash
-else: 
-    log.debug("########################################### Loading SHA256 Support ######################################################")
-
-#if settings.COINDAEMON_Reward == 'POS':
-#        log.debug("########################################### Loading POS Support #########################################################")
-#        pass
-#else:
-#        log.debug("########################################### Loading POW Support ######################################################")
-#        pass
-
-if settings.COINDAEMON_TX == 'yes':
-    log.debug("########################################### Loading SHA256 Transaction Message Support #########################################################")
-    pass
-else:
-    log.debug("########################################### NOT Loading SHA256 Transaction Message Support ######################################################")
-    pass
-
-
 MY_VERSION = 31402
 MY_SUBVERSION = ".4"
 
@@ -156,59 +132,25 @@ class CTxOut(object):
 
 class CTransaction(object):
     def __init__(self):
-        if settings.COINDAEMON_Reward == 'POW':
-            self.nVersion = 1
-            if settings.COINDAEMON_TX == 'yes':
-                self.nVersion = 2
-            self.vin = []
-            self.vout = []
-            self.nLockTime = 0
-            self.sha256 = None
-        elif settings.COINDAEMON_Reward == 'POS':
-            self.nVersion = 1
-            if settings.COINDAEMON_TX == 'yes':
-                self.nVersion = 2
-            self.nTime = 0
-            self.vin = []
-            self.vout = []
-            self.nLockTime = 0
-            self.sha256 = None
-        if settings.COINDAEMON_TX == 'yes': 
-            self.strTxComment = ""
+        self.nVersion = 2
+        self.vin = []
+        self.vout = []
+        self.nLockTime = 0
+        self.sha256 = None
 
     def deserialize(self, f):
-        if settings.COINDAEMON_Reward == 'POW':
-            self.nVersion = struct.unpack("<i", f.read(4))[0]
-            self.vin = deser_vector(f, CTxIn)
-            self.vout = deser_vector(f, CTxOut)
-            self.nLockTime = struct.unpack("<I", f.read(4))[0]
-            self.sha256 = None
-        elif settings.COINDAEMON_Reward == 'POS':
-            self.nVersion = struct.unpack("<i", f.read(4))[0]
-            self.nTime = struct.unpack("<i", f.read(4))[0]
-            self.vin = deser_vector(f, CTxIn)
-            self.vout = deser_vector(f, CTxOut)
-            self.nLockTime = struct.unpack("<I", f.read(4))[0]
-            self.sha256 = None
-        if settings.COINDAEMON_TX == 'yes':
-            self.strTxComment = deser_string(f)
+        self.nVersion = struct.unpack("<i", f.read(4))[0]
+        self.vin = deser_vector(f, CTxIn)
+        self.vout = deser_vector(f, CTxOut)
+        self.nLockTime = struct.unpack("<I", f.read(4))[0]
+        self.sha256 = None
 
     def serialize(self):
-        if settings.COINDAEMON_Reward == 'POW':
-            r = ""
-            r += struct.pack("<i", self.nVersion)
-            r += ser_vector(self.vin)
-            r += ser_vector(self.vout)
-            r += struct.pack("<I", self.nLockTime)
-        elif settings.COINDAEMON_Reward == 'POS':
-            r = ""
-            r += struct.pack("<i", self.nVersion)
-            r += struct.pack("<i", self.nTime)
-            r += ser_vector(self.vin)
-            r += ser_vector(self.vout)
-            r += struct.pack("<I", self.nLockTime)
-        if settings.COINDAEMON_TX == 'yes':
-            r += ser_string(self.strTxComment)
+        r = ""
+        r += struct.pack("<i", self.nVersion)
+        r += ser_vector(self.vin)
+        r += ser_vector(self.vout)
+        r += struct.pack("<I", self.nLockTime)
         return r
  
     def calc_sha256(self):
@@ -233,132 +175,57 @@ class CBlock(object):
         self.nTime = 0
         self.nBits = 0
         self.nNonce = 0
+        self.hashStateRoot = 0
+        self.hashUTXORoot = 0
         self.vtx = []
         self.sha256 = None
-        if settings.COINDAEMON_ALGO == 'scrypt':
-            self.scrypt = None
-        elif settings.COINDAEMON_ALGO == 'quark':
-            self.quark = None
-        elif settings.COINDAEMON_ALGO == 'riecoin':
-            self.riecoin = None
-        else: pass
-        if settings.COINDAEMON_Reward == 'POS':
-            self.signature = b""
-        else: pass
 
     def deserialize(self, f):
         self.nVersion = struct.unpack("<i", f.read(4))[0]
         self.hashPrevBlock = deser_uint256(f)
         self.hashMerkleRoot = deser_uint256(f)
-        if settings.COINDAEMON_ALGO == 'riecoin':
-            self.nBits = struct.unpack("<I", f.read(4))[0]
-            self.nTime = struct.unpack("<II", f.read(8))[0]
-            self.nNonce = struct.unpack("<IIIIIIII", f.read(32))[0]
-        else:
-            self.nTime = struct.unpack("<I", f.read(4))[0]
-            self.nBits = struct.unpack("<I", f.read(4))[0]
-            self.nNonce = struct.unpack("<I", f.read(4))[0]
+        self.nTime = struct.unpack("<I", f.read(4))[0]
+        self.nBits = struct.unpack("<I", f.read(4))[0]
+        self.nNonce = struct.unpack("<I", f.read(4))[0]
+        self.hashstateroot = deser_uint256(f)
+        self.hashutxoroot = deser_uint256(f)
         self.vtx = deser_vector(f, CTransaction)
-        if settings.COINDAEMON_Reward == 'POS':
-            self.signature = deser_string(f)
-        else: pass
 
     def serialize(self):
         r = []
         r.append(struct.pack("<i", self.nVersion))
         r.append(ser_uint256(self.hashPrevBlock))
         r.append(ser_uint256(self.hashMerkleRoot))
-        if settings.COINDAEMON_ALGO == 'riecoin':
-            r.append(struct.pack("<I", self.nBits))
-            r.append(struct.pack("<Q", self.nTime))
-            r.append(ser_uint256(self.nNonce))
-        else:
+        r.append(struct.pack("<I", self.nTime))
+        r.append(struct.pack("<I", self.nBits))
+        r.append(struct.pack("<I", self.nNonce))
+        r.append(ser_uint256(self.hashstateroot))
+        r.append(ser_uint256(self.hashutxoroot))
+        r.append(binascii.unhexlify("0000000000000000000000000000000000000000000000000000000000000000ffffffff00"))
+        r.append(ser_vector(self.vtx))
+        return ''.join(r)
+
+    def calc_sha256(self):
+        if self.sha256 is None:
+            r = []
+            r.append(struct.pack("<i", self.nVersion))
+            r.append(ser_uint256(self.hashPrevBlock))
+            r.append(ser_uint256(self.hashMerkleRoot))
             r.append(struct.pack("<I", self.nTime))
             r.append(struct.pack("<I", self.nBits))
             r.append(struct.pack("<I", self.nNonce))
-        r.append(ser_vector(self.vtx))
-        if settings.COINDAEMON_Reward == 'POS':
-            r.append(ser_string(self.signature))
-        else: pass
-        return ''.join(r)
-
-    if settings.COINDAEMON_ALGO == 'scrypt':
-       def calc_scrypt(self):
-           if self.scrypt is None:
-               r = []
-               r.append(struct.pack("<i", self.nVersion))
-               r.append(ser_uint256(self.hashPrevBlock))
-               r.append(ser_uint256(self.hashMerkleRoot))
-               r.append(struct.pack("<I", self.nTime))
-               r.append(struct.pack("<I", self.nBits))
-               r.append(struct.pack("<I", self.nNonce))
-               self.scrypt = uint256_from_str(ltc_scrypt.getPoWHash(''.join(r)))
-           return self.scrypt
-    elif settings.COINDAEMON_ALGO == 'quark':
-         def calc_quark(self):
-             if self.quark is None:
-                r = []
-                r.append(struct.pack("<i", self.nVersion))
-                r.append(ser_uint256(self.hashPrevBlock))
-                r.append(ser_uint256(self.hashMerkleRoot))
-                r.append(struct.pack("<I", self.nTime))
-                r.append(struct.pack("<I", self.nBits))
-                r.append(struct.pack("<I", self.nNonce))
-                self.quark = uint256_from_str(quark_hash.getPoWHash(''.join(r)))
-             return self.quark
-    elif settings.COINDAEMON_ALGO == 'riecoin':
-         def calc_riecoin(self):
-             if self.riecoin is None:
-                r = []
-                r.append(struct.pack("<i", self.nVersion))
-                r.append(ser_uint256(self.hashPrevBlock))
-                r.append(ser_uint256(self.hashMerkleRoot))
-                r.append(struct.pack("<I", self.nBits))
-                r.append(struct.pack("<Q", self.nTime))
-                sha256 = uint256_from_str(SHA256.new(SHA256.new(''.join(r)).digest()).digest())
-                self.riecoin = riecoinPoW( sha256, uint256_from_compact(self.nBits), self.nNonce )
-             return self.riecoin
-    else:
-       def calc_sha256(self):
-           if self.sha256 is None:
-               r = []
-               r.append(struct.pack("<i", self.nVersion))
-               r.append(ser_uint256(self.hashPrevBlock))
-               r.append(ser_uint256(self.hashMerkleRoot))
-               r.append(struct.pack("<I", self.nTime))
-               r.append(struct.pack("<I", self.nBits))
-               r.append(struct.pack("<I", self.nNonce))
-               self.sha256 = uint256_from_str(SHA256.new(SHA256.new(''.join(r)).digest()).digest())
-           return self.sha256
-
+            r.append(ser_uint256(self.hashstateroot))
+            r.append(ser_uint256(self.hashutxoroot))
+            r.append(binascii.unhexlify("0000000000000000000000000000000000000000000000000000000000000000ffffffff00"))
+            #log.debug("r: %s", binascii.hexlify(''.join(r)))
+            self.sha256 = uint256_from_str(SHA256.new(SHA256.new(''.join(r)).digest()).digest())
+        return self.sha256
 
     def is_valid(self):
-        if settings.COINDAEMON_ALGO == 'riecoin':
-            self.calc_riecoin()
-        elif settings.COINDAEMON_ALGO == 'scrypt':
-            self.calc_scrypt()
-        elif settings.COINDAEMON_ALGO == 'quark':
-            self.calc_quark()
-        else:
-            self.calc_sha256()
-
-        if settings.COINDAEMON_ALGO == 'riecoin':
-            target = settings.POOL_TARGET
-        else:
-            target = uint256_from_compact(self.nBits)
-
-        if settings.COINDAEMON_ALGO == 'riecoin':
-            if self.riecoin < target:
-                return False
-        if settings.COINDAEMON_ALGO == 'scrypt':
-            if self.scrypt > target:
-                return False
-        elif settings.COINDAEMON_ALGO == 'quark':
-            if self.quark > target:
-                return False
-        else:
-           if self.sha256 > target:
-                return False
+        self.calc_sha256()
+        target = uint256_from_compact(self.nBits)
+        if self.sha256 > target:
+            return False
 
         hashes = []
         for tx in self.vtx:
@@ -378,6 +245,7 @@ class CBlock(object):
         if uint256_from_str(hashes[0]) != self.hashMerkleRoot:
             return False
         return True
+
     def __repr__(self):
         return "CBlock(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x vtx=%s)" % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot, time.ctime(self.nTime), self.nBits, self.nNonce, repr(self.vtx))
 
@@ -654,14 +522,6 @@ class BitcoinP2PProtocol(Protocol):
 
         method = getattr(self, mname)
         method(message)
-
-#        if message.command == "tx":
-#            message.tx.calc_sha256()
-#            sha256 = message.tx.sha256
-#            pubkey = binascii.hexlify(message.tx.vout[0].scriptPubKey)
-#            txlock.acquire()
-#            tx.append([str(sha256), str(time.time()), str(self.dstaddr), pubkey])
-#            txlock.release()
 
     def do_version(self, message):
         #print message

@@ -230,3 +230,6 @@ class DBInterface():
     def clear_worker_diff(self):
         return self.dbi.clear_worker_diff()
 
+    # https://github.com/Crypto-Expert/stratum-mining/issues/249
+    def import_shares(self, data):
+        return self.dbi.import_shares(data)

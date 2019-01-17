@@ -116,7 +116,7 @@ class BasicShareLimiter(object):
         else:
             ddiff = int((float(current_difficulty) * (float(self.target) / float(avg))) - current_difficulty)
 
-        if (avg > self.tmax and current_difficulty > settings.VDIFF_MIN_TARGET):
+        if avg > self.tmax:
             # For fractional -0.1 ddiff's just drop by 1
             if settings.VDIFF_X2_TYPE:
                 ddiff = 0.5
@@ -124,10 +124,10 @@ class BasicShareLimiter(object):
                 if (ddiff * current_difficulty) < settings.VDIFF_MIN_TARGET:
                     ddiff = settings.VDIFF_MIN_TARGET / current_difficulty
             else:
-                if ddiff > -1:
-                    ddiff = -1
+                if ddiff > -settings.VDIFF_MIN_CHANGE:
+                    ddiff = -settings.VDIFF_MIN_CHANGE
                 # Don't drop below POOL_TARGET
-                if (ddiff + current_difficulty) < settings.POOL_TARGET:
+                if (ddiff + current_difficulty) < settings.VDIFF_MIN_TARGET:
                     ddiff = settings.VDIFF_MIN_TARGET - current_difficulty
         elif avg < self.tmin:
             # For fractional 0.1 ddiff's just up by 1
@@ -143,8 +143,8 @@ class BasicShareLimiter(object):
                 if (ddiff * current_difficulty) > diff_max:
                     ddiff = diff_max / current_difficulty
             else:
-                if ddiff < 1:
-                   ddiff = 1
+                if ddiff < settings.VDIFF_MIN_CHANGE:
+                   ddiff = settings.VDIFF_MIN_CHANGE
                 # Don't go above LITECOIN or VDIFF_MAX_TARGET
                 if settings.USE_COINDAEMON_DIFF:
                    self.update_litecoin_difficulty()
@@ -168,14 +168,14 @@ class BasicShareLimiter(object):
         self.worker_stats[worker_name]['buffer'].clear()
         session = connection_ref().get_session()
 
-        (job_id, prevhash, coinb1, coinb2, merkle_branch, version, nbits, ntime, _) = \
+        (job_id, prevhash, coinb1, coinb2, merkle_branch, version, nbits, ntime, hashstateroot, hashutxoroot, _) = \
             Interfaces.template_registry.get_last_broadcast_args()
         work_id = Interfaces.worker_manager.register_work(worker_name, job_id, new_diff)
         
         session['difficulty'] = new_diff
         connection_ref().rpc('mining.set_difficulty', [new_diff, ], is_notification=True)
         log.debug("Notified of New Difficulty")
-        connection_ref().rpc('mining.notify', [work_id, prevhash, coinb1, coinb2, merkle_branch, version, nbits, ntime, False, ], is_notification=True)
+        connection_ref().rpc('mining.notify', [work_id, prevhash, coinb1, coinb2, merkle_branch, version, nbits, ntime, hashstateroot, hashutxoroot, False, ], is_notification=True)
         log.debug("Sent new work")
         dbi.update_worker_diff(worker_name, new_diff)
 

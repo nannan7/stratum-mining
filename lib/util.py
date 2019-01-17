@@ -214,62 +214,18 @@ def ser_number(n):
     s.append(n)
     return bytes(s)
 
-
 def isPrime( n ):
     if pow( 2, n-1, n ) == 1:
         return True
     return False
 
-def riecoinPoW( hash_int, diff, nNonce ):
-    base = 1 << 8
-    for i in range(256):
-        base = base << 1
-        base = base | (hash_int & 1)
-        hash_int = hash_int >> 1
-    trailingZeros = diff - 1 - 8 - 256
-    if trailingZeros < 16 or trailingZeros > 20000:
-        return 0
-    base = base << trailingZeros
-    
-    base += nNonce
-    
-    if (base % 210) != 97:
-        return 0
-    
-    if not isPrime( base ):
-        return 0
-    primes = 1
-    
-    base += 4
-    if isPrime( base ):
-        primes+=1
-    
-    base += 2
-    if isPrime( base ):
-        primes+=1
-    
-    base += 4
-    if isPrime( base ):
-        primes+=1
-    
-    base += 2
-    if isPrime( base ):
-        primes+=1
-    
-    base += 4
-    if isPrime( base ):
-        primes+=1
-      
-    return primes
-
-#if settings.COINDAEMON_Reward == 'POW':
 def script_to_address(addr):
     d = address_to_pubkeyhash(addr)
     if not d:
         raise ValueError('invalid address')
     (ver, pubkeyhash) = d
     return b'\x76\xa9\x14' + pubkeyhash + b'\x88\xac'
-#else:
+
 def script_to_pubkey(key):
     if len(key) == 66: key = binascii.unhexlify(key)
     if len(key) != 33: raise Exception('Invalid Address')

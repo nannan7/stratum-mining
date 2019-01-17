@@ -71,7 +71,7 @@ class ShareManagerInterface(object):
     
     def on_network_block(self, prevhash, block_height):
         '''Prints when there's new block coming from the network (possibly new round)'''
-        self.block_height = block_height        
+        self.block_height = block_height
         self.prev_hash = b58encode(int(prevhash, 16))
         pass
     
