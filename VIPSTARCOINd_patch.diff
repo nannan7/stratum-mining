@@ -1,0 +1,23 @@
+--- mining.cpp_orig	2018-07-19 10:22:46.741350425 +0900
++++ mining.cpp	2018-07-19 10:26:00.400431470 +0900
+@@ -947,10 +947,20 @@ UniValue getblocktemplate(const JSONRPCR
+         aMutable.push_back("version/force");
+     }
+ 
++    UniValue coinbasevalues(UniValue::VARR);
++    for (const auto& it : pblock->vtx[0]->vout) {
++        UniValue entry(UniValue::VOBJ);
++        entry.push_back(Pair("nValue", (int64_t)it.nValue));
++        entry.push_back(Pair("scriptPubKey", HexStr(it.scriptPubKey)));
++        coinbasevalues.push_back(entry);
++    }
++    //LogPrintf("pblock: %s", pblock->ToString().c_str());
++
+     result.push_back(Pair("previousblockhash", pblock->hashPrevBlock.GetHex()));
+     result.push_back(Pair("transactions", transactions));
+     result.push_back(Pair("coinbaseaux", aux));
+     result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0]->vout[0].nValue));
++    result.push_back(Pair("coinbasevalues", coinbasevalues));
+     result.push_back(Pair("longpollid", chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
+     result.push_back(Pair("target", hashTarget.GetHex()));
+     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast()+1));
