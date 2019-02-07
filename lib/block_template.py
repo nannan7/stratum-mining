@@ -63,8 +63,9 @@ class BlockTemplate(halfnode.CBlock):
     def fill_from_rpc(self, data):
         '''Convert getblocktemplate result into BlockTemplate instance'''
         #log.debug("data!!!!!!!!!!!!!: %s", data)
+        data['transactions'].pop(0)
+        #log.debug("transactions!!!!: %s", data['transactions'])
 
-        commitment = None
         txids = []
         hashes = [None] + [ util.ser_uint256(int(t['hash'], 16)) for t in data['transactions'] ]
         try:
@@ -73,20 +74,8 @@ class BlockTemplate(halfnode.CBlock):
         except KeyError:
             mt = merkletree.MerkleTree(hashes)
 
-        wmt = merkletree.MerkleTree(hashes).withFirst(binascii.unhexlify('0000000000000000000000000000000000000000000000000000000000000000'))
-        self.witness = SHA256.new(SHA256.new(wmt + witness_nonce).digest()).digest()
-        commitment = b'\x6a' + struct.pack(">b", len(self.witness) + len(witness_magic)) + witness_magic + self.witness
-        try:
-            default_witness = data['default_witness_commitment']
-            commitment_check = binascii.unhexlify(default_witness)
-            if(commitment != commitment_check):
-                print("calculated witness does not match supplied one! This block probably will not be accepted!")
-                commitment = commitment_check
-        except KeyError:
-            pass
-        self.witness = commitment[6:]
         coinbase = CoinbaseTransactionPOW(self.timestamper, self.coinbaser, data['coinbasevalues'],
-                                          data['coinbaseaux']['flags'], data['height'], commitment, settings.COINBASE_EXTRAS)
+                                          data['coinbaseaux']['flags'], data['height'], None, settings.COINBASE_EXTRAS)
         self.height = data['height']
         self.nVersion = data['version']
         self.hashPrevBlock = int(data['previousblockhash'], 16)

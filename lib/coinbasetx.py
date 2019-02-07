@@ -33,17 +33,20 @@ class CoinbaseTransactionPOW(halfnode.CTransaction):
         )
                 
         tx_in.scriptSig = tx_in._scriptSig_template[0] + self.extranonce_placeholder + tx_in._scriptSig_template[1]
-    
-        tx_out = halfnode.CTxOut()
-        tx_out.nValue = values[0]['nValue']
-        tx_out.scriptPubKey = coinbaser.get_script_pubkey()
-
         self.vin.append(tx_in)
+
+        tx_out = halfnode.CTxOut()
+        tx_out.nValue = values[1]['nValue']
+        tx_out.scriptPubKey = coinbaser.get_script_pubkey()
         self.vout.append(tx_out)
 
-        values.pop(-1)
+        tx_out = halfnode.CTxOut()
+        tx_out.nValue = 0
+        tx_out.scriptPubKey = ""
+        self.vout.append(tx_out)
+
+        del values[:2]
         log.debug("values: %s", values)
-        values.pop(0)
 
         for value in values:
             tx_out = halfnode.CTxOut()
@@ -51,15 +54,10 @@ class CoinbaseTransactionPOW(halfnode.CTransaction):
             tx_out.scriptPubKey = binascii.unhexlify(value['scriptPubKey'])
             self.vout.append(tx_out)
 
-        if(commitment):
-            txout_commitment = halfnode.CTxOut()
-            txout_commitment.nValue = 0
-            txout_commitment.scriptPubKey = commitment
-            self.vout.append(txout_commitment)
-
         # Two parts of serialized coinbase, just put part1 + extranonce + part2 to have final serialized tx
         self._serialized = super(CoinbaseTransactionPOW, self).serialize().split(self.extranonce_placeholder)
-        #log.debug("vout!!!!!!!!!!!!!!: %s", self.vout)
+        #log.debug("vin!!!!!!!!!!!!!!: %s", self.vin)
+        #log.debug("vout!!!!!!!!!!!!!: %s", self.vout)
 
     def set_extranonce(self, extranonce):
         if len(extranonce) != self.extranonce_size:

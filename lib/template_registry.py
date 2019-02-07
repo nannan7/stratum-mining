@@ -266,10 +266,6 @@ class TemplateRegistry(object):
 
             # 6. Finalize and serialize block object 
             job.finalize(merkle_root_int, extranonce1_bin, extranonce2_bin, int(ntime, 16), int(nonce, 16))
-
-            if not job.is_valid():
-                # Should not happen
-                log.exception("FINAL JOB VALIDATION FAILED!(Try enabling/disabling tx messages)")
                             
             # 7. Submit block to the network
             serialized = binascii.hexlify(job.serialize())
