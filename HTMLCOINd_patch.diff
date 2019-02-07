@@ -1,11 +1,22 @@
---- mining.cpp_orig	2018-07-19 10:22:46.741350425 +0900
-+++ mining.cpp	2018-07-19 10:26:00.400431470 +0900
-@@ -947,10 +947,20 @@ UniValue getblocktemplate(const JSONRPCR
+--- HTMLCOIN_orig/src/miner.cpp	2019-02-06 13:21:56.549279606 +0900
++++ HTMLCOIN/src/miner.cpp	2019-02-06 13:19:44.065915612 +0900
+@@ -272,7 +272,7 @@ std::unique_ptr<CBlockTemplate> BlockAss
+     pblock->nTime = txProofTime;
+     if (!fProofOfStake)
+         UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
+-    pblock->nBits = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus(),fProofOfStake);
++    pblock->nBits = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus(),false);
+     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
+ 
+     nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
+--- HTMLCOIN_orig/src/rpc/mining.cpp	2019-02-06 13:21:56.449279904 +0900
++++ HTMLCOIN/src/rpc/mining.cpp	2019-02-06 13:27:04.936421519 +0900
+@@ -933,10 +933,20 @@ UniValue getblocktemplate(const JSONRPCR
          aMutable.push_back("version/force");
      }
  
 +    UniValue coinbasevalues(UniValue::VARR);
-+    for (const auto& it : pblock->vtx[0]->vout) {
++    for (const auto& it : pblock->vtx[1]->vout) {
 +        UniValue entry(UniValue::VOBJ);
 +        entry.push_back(Pair("nValue", (int64_t)it.nValue));
 +        entry.push_back(Pair("scriptPubKey", HexStr(it.scriptPubKey)));
