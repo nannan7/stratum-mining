@@ -1,9 +1,9 @@
 [ ![Codeship Status for ahmedbodi/php-mpos](https://www.codeship.io/projects/b3003a70-61a3-0131-231e-26f75a0c690d/status?branch=master)](https://www.codeship.io/projects/12274)
 
-#Stratum-mining optimized for VIPSTARCOIN.
+#Stratum-mining optimized for HTMLCOIN.
 
 **Requirements:**
-Patch to VIPSTARCOINd (VIPSTARCOINd_patch.diff)
+Patch to VIPSTARCOINd (HTMLCOINd_patch.diff)
 
 ----
 #Description
